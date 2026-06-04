@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
-import models, schemas, seed
+import models, schemas, seed, policies
 from database import engine, SessionLocal
 
 models.Base.metadata.create_all(bind=engine)
@@ -144,6 +144,11 @@ def cancel_booking(pnr: str, reason: str = "Customer initiated cancellation", db
 @app.get("/api/refunds", response_model=List[schemas.RefundRequest])
 def get_refund_requests(db: Session = Depends(get_db)):
     return db.query(models.RefundRequest).all()
+
+# New endpoint: return the policy definitions
+@app.get("/api/policies", response_model=List[schemas.Policy])
+def get_policies():
+    return [schemas.Policy(name=name, description=desc) for name, desc in policies.POLICIES.items()]
 
 @app.post("/api/refunds/{refund_id}/approve")
 def approve_refund(refund_id: int, comments: str = "", db: Session = Depends(get_db)):
