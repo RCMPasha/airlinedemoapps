@@ -5,5 +5,7 @@ __pycache__/
 .env
 .venv
 venv/
-*.db
+# meridianairways.db is intentionally tracked (pre-seeded demo data)
+# *.db
+
 .DS_Store
