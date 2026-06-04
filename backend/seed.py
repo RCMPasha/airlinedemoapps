@@ -6,10 +6,11 @@ import os
 import models, schemas
 from database import engine, Base
 
-def seed_db(db: Session):
-    # Check if we already have data
-    if db.query(models.Airport).first():
+def seed_db(db: Session, force: bool = False):
+    # Check if we already have data - use bookings as the reliable indicator
+    if not force and db.query(models.Booking).count() > 0:
         return
+
     
     # 1. Airports
     seed_path = os.path.join(os.path.dirname(__file__), 'airports_seed.json')

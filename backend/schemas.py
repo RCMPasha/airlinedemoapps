@@ -90,6 +90,13 @@ class AuditLogBase(BaseModel):
     outputs: str
     booking_id: Optional[int] = None
 
+class AuditLog(AuditLogBase):
+    id: int
+    timestamp: datetime
+    
+    class Config:
+        orm_mode = True
+
 class Policy(BaseModel):
     name: str
     description: str

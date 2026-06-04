@@ -118,17 +118,47 @@
 
 ## Database Seeding & Sample Data
 
-- The `backend/seed.py` script is **idempotent** – it checks for existing data before inserting.
+The `backend/seed.py` script is called automatically on **every backend startup** via a FastAPI startup event.
+
+- It is **idempotent** – it checks if bookings already exist before inserting, so it is safe to restart containers without duplicating data.
 - It creates:
   - **Airports** – 76 entries covering GCC, Saudi Arabia, and major global hubs.
-  - **Flights** – realistic future dates, random aircraft, base price.
-  - **Customers** – with loyalty tiers (Blue, Silver, Gold, Platinum).
-  - **Bookings** – 100+ confirmed bookings with a variety of cabin classes.
-  - **Refund Requests** – generated automatically when a booking is cancelled via the API.
-- To re‑seed manually (e.g., after clearing the DB):
-  ```bash
-  docker-compose exec backend python backend/seed.py
-  ```
+  - **Flights** – realistic future dates, random aircraft, base prices.
+  - **Customers** – 100 synthetic customers with loyalty tiers (Blue, Silver, Gold, Platinum).
+  - **Bookings** – 109 bookings including 5 specific demo scenarios (Economy Flex, Business Class high‑value, Cancelled Flight, Fraud Risk, Medical Emergency).
+  - **Refund Requests** – pre‑seeded for each demo scenario; new ones are created automatically when a booking is cancelled via the API.
+  - **Audit Logs** – initial entries showing eligibility and approval agent decisions.
+
+### Manual Seeding
+
+To force‑seed (e.g., database is empty after a failed start):
+
+```bash
+# Run inside the backend container
+docker-compose exec backend python -c "
+from database import SessionLocal, engine, Base
+import models, seed
+Base.metadata.create_all(bind=engine)
+db = SessionLocal()
+seed.seed_db(db, force=True)
+db.close()
+print('Done')
+"
+```
+
+### Policy Files
+
+Policy documents are Markdown files stored in `backend/policy_files/`. They are served by the `/api/policy-files` endpoint and used by the AI Refund Agent to make decisions.
+
+```bash
+# List available policies
+curl http://localhost:8000/api/policy-files
+
+# Or view them directly
+ls backend/policy_files/
+```
+
+To add a new policy, simply drop a `.md` file into `backend/policy_files/`. No restart needed – the endpoint reads from disk at request time.
 
 ---
 
@@ -178,9 +208,13 @@ All endpoints are prefixed with `/api`.
 - **Database inspection** – open SQLite client inside the container:
   ```bash
   docker exec -it airlinesapp-backend-1 bash
-  sqlite3 /tmp/meridianairways.db
+  sqlite3 /app/meridianairways.db
   ```
   Then you can run `SELECT * FROM bookings ORDER BY id DESC LIMIT 10;`.
+- **Quick DB health check**:
+  ```bash
+  docker-compose exec backend python /app/check_db.py
+  ```
 - **Frontend hot‑reload** – when running with `npm run dev`, changes to `.tsx` files refresh automatically.
 
 ---
