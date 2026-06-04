@@ -160,6 +160,83 @@ ls backend/policy_files/
 
 To add a new policy, simply drop a `.md` file into `backend/policy_files/`. No restart needed – the endpoint reads from disk at request time.
 
+### DB is Empty or Corrupt — Recovery Steps
+
+The pre-seeded `backend/meridianairways.db` is committed to the repository. If the UI shows **0 records**, or if the database becomes corrupt, follow one of the recovery paths below.
+
+#### Option A – Restore from Git (recommended)
+
+This restores the exact known-good database that was committed with seed data.
+
+```bash
+# 1. Stop the containers
+docker-compose down
+
+# 2. Restore the DB file from git
+git checkout -- backend/meridianairways.db
+
+# 3. Restart (no rebuild needed)
+docker-compose up -d
+
+# 4. Verify
+docker-compose exec backend python /app/check_db.py
+# Expected: Bookings count: 109
+```
+
+#### Option B – Force Re-seed (when you want a fresh database)
+
+Use this when you've deleted the DB file and want the seed script to recreate it.
+
+```bash
+# 1. Stop the containers
+docker-compose down
+
+# 2. Delete the stale / corrupt DB file
+#    Windows PowerShell:
+Remove-Item -Path "backend\meridianairways.db" -ErrorAction SilentlyContinue
+#    Mac / Linux:
+# rm backend/meridianairways.db
+
+# 3. Rebuild and start (seed.py runs automatically on startup)
+docker-compose up -d --build
+
+# 4. Verify
+docker-compose exec backend python /app/check_db.py
+# Expected: Bookings count: 109
+```
+
+#### Option C – Force-seed without deleting the DB
+
+Use this if the DB file exists but is empty (e.g., tables were created but data was never inserted).
+
+```bash
+docker-compose exec backend python -c "
+from database import SessionLocal, engine, Base
+import models, seed
+Base.metadata.create_all(bind=engine)
+db = SessionLocal()
+seed.seed_db(db, force=True)
+db.close()
+print('Done — seeding complete')
+"
+```
+
+#### Verify health at any time
+
+```bash
+docker-compose exec backend python /app/check_db.py
+```
+
+Expected output:
+
+```
+DB path: /app/meridianairways.db
+Tables: [('airports',), ('customers',), ('audit_logs',), ('flights',), ('bookings',), ('refund_requests',)]
+Bookings count: 109
+```
+
+
+
 ---
 
 ## User Interface Walk‑through
