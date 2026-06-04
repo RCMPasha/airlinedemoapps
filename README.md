@@ -267,6 +267,8 @@ All endpoints are prefixed with `/api`.
 | `POST` | `/api/refunds/{refund_id}/approve` | Approve a pending refund (human‑review). | `{ "comments": "Approved by supervisor" }` |
 | `POST` | `/api/refunds/{refund_id}/reject` | Reject a pending refund. | `{ "comments": "Rejected – fraud risk" }` |
 | `GET` | `/api/audit-logs` | Retrieve ordered audit‑log entries (used by AIOps Console). | – |
+| `GET` | `/api/policy-files` | Retrieve all airline cancellation/refund policy documents (Markdown content). | – |
+
 
 ---
 
@@ -300,10 +302,11 @@ All endpoints are prefixed with `/api`.
 
 | Limitation | Current Work‑around | Planned Improvement |
 |------------|---------------------|----------------------|
-| **Policy endpoint** – no API to fetch policy files. | Policies are hard‑coded in `cancel_booking`. | Add `GET /api/policies/*` to serve markdown policy documents. |
 | **AI Agent prompt execution** – UI is mock only. | Demonstrates reasoning visually. | Integrate an LLM (e.g., LangGraph, AutoGen) and wire the `skills` functions. |
 | **Payment gateway** – mock payment UI. | No real transaction. | Plug in Stripe/PayPal sandbox for real payment flow. |
 | **Large Docker images** – Vite build > 500 KB chunks. | Acceptable for demo. | Code‑split with dynamic imports, enable chunk‑size limit tuning. |
+| **Pydantic V2 warnings** – `orm_mode` deprecated. | Warnings suppressed or displayed at startup. | Migrate Pydantic models to V2 config system (`model_config = ConfigDict(from_attributes=True)`). |
+
 
 ---
 
