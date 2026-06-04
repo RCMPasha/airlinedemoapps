@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
+import os
+import os
 import models, schemas, seed, policies
 from database import engine, SessionLocal
 
@@ -146,9 +148,17 @@ def get_refund_requests(db: Session = Depends(get_db)):
     return db.query(models.RefundRequest).all()
 
 # New endpoint: return the policy definitions
-@app.get("/api/policies", response_model=List[schemas.Policy])
-def get_policies():
-    return [schemas.Policy(name=name, description=desc) for name, desc in policies.POLICIES.items()]
+@app.get("/api/policy-files", response_model=List[schemas.Policy])
+def get_policy_files():
+    policy_dir = os.path.join(os.path.dirname(__file__), "policy_files")
+    files = []
+    for filename in os.listdir(policy_dir):
+        if filename.endswith('.md'):
+            with open(os.path.join(policy_dir, filename), 'r', encoding='utf-8') as f:
+                content = f.read()
+            files.append(schemas.Policy(name=filename.replace('.md', ''), description=content))
+    return files
+
 
 @app.post("/api/refunds/{refund_id}/approve")
 def approve_refund(refund_id: int, comments: str = "", db: Session = Depends(get_db)):
